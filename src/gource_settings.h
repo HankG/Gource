@@ -86,6 +86,7 @@ public:
     std::string default_user_image;
     std::string user_image_dir;
     std::map<std::string, std::string> user_image_map;
+    std::map<std::string, std::string> user_alternate_name_map;
 
     float camera_zoom_min;
     float camera_zoom_max;

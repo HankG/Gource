@@ -80,6 +80,7 @@ void GourceSettings::help(bool extended_help) {
     printf("  --key                            Show file extension key\n\n");
 
     printf("  --user-image-dir DIRECTORY       Dir containing images to use as avatars\n");
+    printf("  --user-name-mappings FILE        File containing mappings of author names to alternative name (like organization)\n");
     printf("  --default-user-image IMAGE       Default user image file\n");
     printf("  --fixed-user-size                Use a fixed size throughout\n");
     printf("  --colour-images                  Colourize user images\n\n");
@@ -327,6 +328,7 @@ GourceSettings::GourceSettings() {
     arg_types["file-idle-time"]     = "string";
     arg_types["file-idle-time-at-end"] = "string";
     arg_types["user-image-dir"]     = "string";
+    arg_types["user-name-mappings"] = "string";
     arg_types["default-user-image"] = "string";
     arg_types["date-format"]        = "string";
     arg_types["log-format"]         = "string";
@@ -838,9 +840,51 @@ void GourceSettings::importGourceSettings(ConfFile& conffile, ConfSection* gourc
                 name = data;
 #endif
 
-            debugLog("%s => %s", name.c_str(), image_path.c_str());
+            printf("%s => %s\n", name.c_str(), image_path.c_str());
 
             user_image_map[name] = image_path;
+        }
+    }
+
+    if((entry = gource_settings->getEntry("user-name-mappings")) != 0) {
+
+        if(!entry->hasValue()) conffile.entryException(entry, "specify user name mappings to do things like show organization rather than user name");
+
+        std::string mapping_file = entry->getString();
+
+        if(!boost::filesystem::exists(mapping_file)) {
+            conffile.entryException(entry, "user name mapping file not found");
+        }
+
+        char delimiter = ',';
+        std::ifstream input_file(mapping_file);
+        if (!input_file.is_open()) {
+            conffile.entryException(entry, "couldn't open name mapping file");
+        }
+
+        std::string currentLine;
+        auto stream = std::ostringstream{};
+        stream << input_file.rdbuf();
+        std::istringstream sstream(stream.str());
+        int count = 0;
+        while(std::getline(sstream, currentLine)) {
+            std::istringstream line(currentLine);
+            std::vector<std::string> lineItems;
+            std::string element;
+            while(std::getline(line, element, delimiter)) {
+                lineItems.push_back(element);
+            }
+            std::string name = lineItems[0];
+            std::string mapping = lineItems[1];
+            if (mapping.empty()) {
+                mapping = name;
+            }
+            //Skip heading line
+            if (count > 0) {
+                user_alternate_name_map[name] = mapping;
+            }
+
+            count++;
         }
     }
 
