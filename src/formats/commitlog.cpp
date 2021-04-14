@@ -351,7 +351,14 @@ void RCommit::addFile(const std::string& filename, const  std::string& action, c
 }
 
 void RCommit::postprocess() {
-    username = RCommitLog::filter_utf8(username);
+    auto utf8Name = RCommitLog::filter_utf8(username);
+    auto mappedName = gGourceSettings.user_alternate_name_map[utf8Name];
+    if (mappedName.empty()) {
+        username = utf8Name;
+    } else {
+        username = mappedName;
+    }
+
 }
 
 bool RCommit::isValid() {
